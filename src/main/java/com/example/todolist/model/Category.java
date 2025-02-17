@@ -26,7 +26,10 @@ public class Category {
 
     @Column (name = "updated_at")
     private LocalDateTime updatedAt;
-
+    //referensi ke todolist dengan kata kunci category
+    //fetch type lazy : ngambil data ketika dibutuhin aja
+    @OneToMany(mappedBy="category", fetch = FetchType.LAZY)
+    private List<Todolist> todolists; //referensi
     @PrePersist //anotasi buat data waktu secara otomatis ketika data pertama kali dibuat
     public void onCreate(){
         this.createdAt=LocalDateTime.now();

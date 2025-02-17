@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ApiResopnse<T> {
+public class ApiResponse<T> {
     private int status;
     private T data; //T adalah generic type
 

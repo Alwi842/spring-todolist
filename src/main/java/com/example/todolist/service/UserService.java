@@ -13,7 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -36,6 +36,19 @@ public class UserService {
             throw new RuntimeException("Failed to get data users",e);
         }
     }
+    public UserResponse findById(UUID userId) {
+        try {
+            return userRepository.findById(userId)
+                    .stream()
+                    .map(this::convertToResponse)
+                    .findFirst()
+                    .orElseThrow(() -> new DataNotFoundException("User not found with id " + userId));
+        } catch (DataNotFoundException e) {
+            throw e;
+        }catch (Exception e) {
+            throw new RuntimeException("Failed to find user by id "+e.getMessage());
+        }
+    }
     public UserResponse findByUsername(String username) {
         try {
             return userRepository.findByUsername(username)
@@ -45,6 +58,18 @@ public class UserService {
             throw e;
         }catch (Exception e) {
             throw new RuntimeException("Failed to find user by username "+e.getMessage());
+        }
+    }
+
+    public UserResponse findByEmail(String email) {
+        try {
+            return userRepository.findByEmail(email)
+                    .map(this::convertToResponse)
+                    .orElseThrow(() -> new DataNotFoundException("User not found with email " + email));
+        } catch (DataNotFoundException e) {
+            throw e;
+        }catch (Exception e) {
+            throw new RuntimeException("Failed to find user by email "+e.getMessage());
         }
     }
     public UserResponse create(UserRequest userRequest) {

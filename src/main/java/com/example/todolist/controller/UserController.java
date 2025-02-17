@@ -1,7 +1,7 @@
 package com.example.todolist.controller;
 
 import com.example.todolist.dto.request.UserRequest;
-import com.example.todolist.dto.response.ApiResopnse;
+import com.example.todolist.dto.response.ApiResponse;
 import com.example.todolist.dto.response.UserResponse;
 import com.example.todolist.exception.DataNotFoundException;
 import com.example.todolist.service.UserService;
@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/users")
@@ -24,26 +25,42 @@ public class UserController {
     public ResponseEntity<?> getAllUser() {
         try{
             return ResponseEntity.status(HttpStatus.OK.value())
-                    .body(new ApiResopnse<>(HttpStatus.OK.value(), userService.findAll()));
+                    .body(new ApiResponse<>(HttpStatus.OK.value(), userService.findAll()));
         } catch (Exception e) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                    .body(new ApiResopnse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
     }
-    @GetMapping("/user")
-    public ResponseEntity<?> getUserByUsername(@RequestParam String username) {
+
+    @GetMapping("/email")
+    public ResponseEntity<?> getUserByEmail(@RequestParam String email) {
         try {
             return ResponseEntity.status(HttpStatus.OK.value())
-                    .body(new ApiResopnse<>(HttpStatus.OK.value(), userService.findByUsername(username)));  // localhost:8080/api/users/username?username={username}")
+                    .body(new ApiResponse<>(HttpStatus.OK.value(), userService.findByEmail(email)));  // localhost:8080/api/users/email?email={email}")
         } catch(DataNotFoundException e) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND.value())
-                    .body(new ApiResopnse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
         }catch (Exception e) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                    .body(new ApiResopnse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
+        }
+    }
+    @GetMapping("/id/{id}")
+    public ResponseEntity<?> getUserById(@PathVariable UUID id) {
+        try {
+            return ResponseEntity.status(HttpStatus.OK.value())
+                    .body(new ApiResponse<>(HttpStatus.OK.value(), userService.findById(id)));  // localhost:8080/api/users/id/{id}")
+        } catch(DataNotFoundException e) {
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND.value())
+                    .body(new ApiResponse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
+        }catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
     }
     //create
@@ -57,15 +74,15 @@ public class UserController {
             }
 
             return ResponseEntity.status(HttpStatus.CREATED.value())
-                    .body(new ApiResopnse<>(HttpStatus.CREATED.value(), createdUsers));
+                    .body(new ApiResponse<>(HttpStatus.CREATED.value(), createdUsers));
 
         } catch (DataIntegrityViolationException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT.value())
-                    .body(new ApiResopnse<>(HttpStatus.CONFLICT.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.CONFLICT.value(), e.getMessage()));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                    .body(new ApiResopnse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
     }
 
@@ -74,16 +91,16 @@ public class UserController {
         try {
             UserResponse updatedUser = userService.update(username, userRequest);
             return ResponseEntity.status(HttpStatus.OK.value())
-                    .body(new ApiResopnse<>(HttpStatus.OK.value(), updatedUser));
+                    .body(new ApiResponse<>(HttpStatus.OK.value(), updatedUser));
         } catch (DataNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND.value())
-                    .body(new ApiResopnse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
         } catch (DataIntegrityViolationException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT.value())
-                    .body(new ApiResopnse<>(HttpStatus.CONFLICT.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.CONFLICT.value(), e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                    .body(new ApiResopnse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
     }
     @DeleteMapping("/{username}")
@@ -91,13 +108,13 @@ public class UserController {
         try {
             userService.delete(username);
             return ResponseEntity.status(HttpStatus.OK.value())
-                    .body(new ApiResopnse<>(HttpStatus.OK.value(), "User deleted successfully"));
+                    .body(new ApiResponse<>(HttpStatus.OK.value(), "User deleted successfully"));
         } catch (DataNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND.value())
-                    .body(new ApiResopnse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                    .body(new ApiResopnse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
     }
 }

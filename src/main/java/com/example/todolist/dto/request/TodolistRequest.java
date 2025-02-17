@@ -1,26 +1,18 @@
 package com.example.todolist.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDateTime;
 
 
 @Data
 public class TodolistRequest {
-    @NotBlank
-    @Size(max=255)
     private String title;
-
-    @NotBlank
     private String description;
-
-    @NotBlank
-    private Long categoryId;
-
-    @NotBlank
     private String username;
-
-    @NotBlank
+    private Long categoryId;
     private Boolean isCompleted;
-
+    private LocalDateTime deletedAt;
+    private MultipartFile imagePath;
 }

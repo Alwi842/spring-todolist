@@ -1,7 +1,7 @@
 package com.example.todolist.controller;
 
 import com.example.todolist.dto.request.CategoryRequest;
-import com.example.todolist.dto.response.ApiResopnse;
+import com.example.todolist.dto.response.ApiResponse;
 import com.example.todolist.dto.response.CategoryResponse;
 import com.example.todolist.exception.DataNotFoundException;
 import com.example.todolist.exception.DuplicateDataException;
@@ -25,11 +25,11 @@ public class CategoryController {
         try{
             List<CategoryResponse>response = categoryService.findAll();
             return ResponseEntity.status(HttpStatus.OK.value())
-                    .body(new ApiResopnse<>(HttpStatus.OK.value(), response));
+                    .body(new ApiResponse<>(HttpStatus.OK.value(), response));
         } catch (Exception e) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                    .body(new ApiResopnse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
     }
     @PostMapping
@@ -37,15 +37,15 @@ public class CategoryController {
         try {
             CategoryResponse response = categoryService.create(categoryRequest);
             return ResponseEntity.status(HttpStatus.CREATED.value())
-                    .body(new ApiResopnse<>(HttpStatus.CREATED.value(), response));
+                    .body(new ApiResponse<>(HttpStatus.CREATED.value(), response));
         } catch (DuplicateDataException e) {
             return ResponseEntity
                     .status(HttpStatus.CONFLICT.value())
-                    .body(new ApiResopnse<>(HttpStatus.CONFLICT.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.CONFLICT.value(), e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                    .body(new ApiResopnse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
     }
     @PutMapping("/{id}")
@@ -53,19 +53,19 @@ public class CategoryController {
         try {
             CategoryResponse response = categoryService.updateCategory(id, categoryRequest);
             return ResponseEntity.status(HttpStatus.OK.value())
-                    .body(new ApiResopnse<>(HttpStatus.OK.value(), response));
+                    .body(new ApiResponse<>(HttpStatus.OK.value(), response));
         } catch (DataNotFoundException e) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND.value())
-                    .body(new ApiResopnse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
         } catch (DuplicateDataException e) {
             return ResponseEntity
                     .status(HttpStatus.CONFLICT.value())
-                    .body(new ApiResopnse<>(HttpStatus.CONFLICT.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.CONFLICT.value(), e.getMessage()));
         }catch (Exception e) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                    .body(new ApiResopnse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
     }
 
@@ -75,15 +75,15 @@ public class CategoryController {
         try {
             categoryService.deleteCategory(id);
             return ResponseEntity.status(HttpStatus.OK.value())
-                    .body(new ApiResopnse<>(HttpStatus.OK.value(), "Category deleted successfully"));
+                    .body(new ApiResponse<>(HttpStatus.OK.value(), "Category deleted successfully"));
         } catch (DataNotFoundException e) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND.value())
-                    .body(new ApiResopnse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                    .body(new ApiResopnse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
     }
     @GetMapping("/id/{id}")
@@ -91,16 +91,16 @@ public class CategoryController {
         try{
             Optional<CategoryResponse> categoryResponse = categoryService.findById(id);
             return ResponseEntity.status(HttpStatus.OK.value())
-                    .body(new ApiResopnse<>(HttpStatus.OK.value(), categoryResponse.get()));
+                    .body(new ApiResponse<>(HttpStatus.OK.value(), categoryResponse.get()));
         } catch (DataNotFoundException e) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND.value())
-                    .body(new ApiResopnse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
 
         } catch (Exception e) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                    .body(new ApiResopnse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
     }
     @GetMapping("/{name}")
@@ -108,16 +108,16 @@ public class CategoryController {
         try{
             Optional<CategoryResponse> categoryResponse = categoryService.findByName(categoryName);
             return ResponseEntity.status(HttpStatus.OK.value())
-                    .body(new ApiResopnse<>(HttpStatus.OK.value(), categoryResponse));
+                    .body(new ApiResponse<>(HttpStatus.OK.value(), categoryResponse));
         } catch (DataNotFoundException e) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND.value())
-                    .body(new ApiResopnse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
 
         } catch (Exception e) {
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                    .body(new ApiResopnse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
     }
 }

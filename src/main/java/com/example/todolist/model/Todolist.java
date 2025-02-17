@@ -8,7 +8,6 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -23,16 +22,28 @@ public class Todolist {
     private String title;
     @Column(name = "description", nullable = false)
     private String description;
-    @Column(name = "category_id", nullable = false)
-    private Long categoryId;
-    @Column(name = "user_id", nullable = false)
-    private UUID userId;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "category_id", nullable = false) // untuk ngambil data sekaligus dengan table di referensi
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    private Category category;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
     @Column(name = "isCompleted")
     private Boolean isCompleted;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "image_path")
+    private String imagePath;
+
     @PrePersist
     public void onCreate(){
         this.createdAt=LocalDateTime.now();

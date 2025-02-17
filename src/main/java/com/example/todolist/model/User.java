@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -17,6 +18,7 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
     @Column(name = "username", nullable = false)
     private String username;
     @Column(name = "email", nullable = false)
@@ -25,6 +27,9 @@ public class User {
     private String password;
     @Column(name ="role", nullable = false)
     private String role;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private List<Todolist> todolists;
 
     @Column (name="created_at", updatable = false)
     private LocalDateTime createdAt;
