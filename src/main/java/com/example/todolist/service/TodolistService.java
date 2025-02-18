@@ -17,8 +17,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,7 +40,7 @@ public class TodolistService {
     public Page<TodolistResponse> findAll(int page, int size) {
         try{
             Pageable pageable = PageRequest.of(page, size);
-            Page<Todolist> todolists = todolistRepository.findAll(pageable);
+            Page<Todolist> todolists = todolistRepository.findAllByDeletedAtIsNull(pageable);
             return todolists.map(this::convertToResponse);
         } catch (Exception e) {
             throw new RuntimeException("Failed to get data todolists",e);
@@ -54,6 +57,7 @@ public class TodolistService {
         }
     }
 
+    @Transactional
     public TodolistResponse create(TodolistRequest todolistRequest) {
         try{
             User user = userRepository.findByUsername(todolistRequest.getUsername())
@@ -159,6 +163,20 @@ public class TodolistService {
             throw new RuntimeException(e);
         }
     }
+    //soft delete
+    @Transactional
+    public void softDeleteTodolist(Long id){
+        try{
+            Todolist todolist = todolistRepository.findById(id)
+                    .orElseThrow(()-> new DataNotFoundException("Todolist not found : "+id));
+            todolist.setDeletedAt(LocalDateTime.now());
+            todolist = todolistRepository.save(todolist);
+        } catch (DataNotFoundException e){
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
     public List<TodolistResponse> searchByTitle(String title) {
         try {
             return todolistRepository.findByTitleContainingIgnoreCase(title)
@@ -176,6 +194,31 @@ public class TodolistService {
                     .map(this::convertToResponse)
                     .toList();
         } catch (Exception e) {
+            throw new RuntimeException("Failed to get data todolists",e);
+        }
+    }
+    public byte[] getImageById(Long id) {
+        try {
+            Todolist todolist = todolistRepository.findById(id)
+                    .orElseThrow(()-> new DataNotFoundException("Todolist not found with id : "+id));
+            if (todolist.getImagePath() != null && !todolist.getImagePath().isEmpty()) {
+                Path filePath = Paths.get(imageDirectory, todolist.getImagePath());
+                return Files.readAllBytes(filePath);
+            }
+            throw new RuntimeException("Image path doesent exist with id : "+id);
+        } catch (IOException e){
+            throw new RuntimeException("Failed to read image file",e);
+        }catch (Exception e) {
+            throw new RuntimeException("Failed to get data todolists",e);
+        }
+    }
+    public byte[] getImageByName(String imageName) {
+        try {
+            Path filePath = Paths.get(imageDirectory, imageName);
+            return Files.readAllBytes(filePath);
+        } catch (IOException e){
+            throw new RuntimeException("Failed to read image file",e);
+        }catch (Exception e) {
             throw new RuntimeException("Failed to get data todolists",e);
         }
     }

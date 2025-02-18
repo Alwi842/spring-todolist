@@ -1,6 +1,8 @@
 package com.example.todolist.repository;
 
 import com.example.todolist.model.Todolist;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -13,4 +15,5 @@ public interface TodolistRepository extends JpaRepository<Todolist, Long> {
     List<Todolist> findByUserId(UUID userId);
     List<Todolist> findByCategoryId(Long categoryId);
     List<Todolist> findByTitleContainingIgnoreCase(String title);
+    Page<Todolist> findAllByDeletedAtIsNull(Pageable pageable);
 }
