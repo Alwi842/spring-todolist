@@ -12,6 +12,9 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -54,12 +57,31 @@ public class UserService implements UserDetailsService {
         user.setUsername(userRequest.getUsername());
         user.setEmail(userRequest.getEmail());
         user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
-        user.setRole(userRequest.getRole());
+        if(!passwordEncoder.matches(userRequest.getPassword(), user.getPassword())){
+            throw new RuntimeException("Register failed, something went wrong with our system");
+        }
+        user.setRole(Optional.ofNullable(userRequest.getRole()).orElse("USER"));
         User register = userRepository.save(user);
         return convertToResponse(register);
     }
+    @Transactional
+    public UserResponse updateUser(UserRequest userRequest, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new DataNotFoundException("User not found with username " + username));
 
-   public UserResponse loginUser(LoginRequest loginRequest){
+        if (userRequest.getUsername() != null) user.setUsername(userRequest.getUsername());
+        if (userRequest.getEmail() != null) user.setEmail(userRequest.getEmail());
+        if (userRequest.getPassword() != null) user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
+        if (userRequest.getRole() != null && user.getRole().equals("ADMIN")) {
+            user.setRole(userRequest.getRole());
+        }
+
+        User updatedUser = userRepository.save(user);
+
+        return convertToResponse(updatedUser);
+    }
+
+    public UserResponse loginUser(LoginRequest loginRequest){
         try {
             Optional<User> userOptional = userRepository.findByUsername(loginRequest.getUsername());
             if (userOptional.isEmpty()) {
@@ -77,7 +99,65 @@ public class UserService implements UserDetailsService {
             throw new RuntimeException(e);
         }
     }
-
+    public Page<UserResponse> getAllUser(int page, int size) {
+        try{
+            Pageable pageable = PageRequest.of(page, size);
+            Page<User> users = userRepository.findAll(pageable);
+            return users.map(this::convertToResponse);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get data users",e);
+        }
+    }
+    @Transactional
+    public UserResponse deleteUserByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new DataNotFoundException("User not found with username " + username));
+        if(user.getRole().equals("ADMIN")) throw new RuntimeException("You can't delete admin account");
+        try {
+            userRepository.delete(user);
+            return convertToResponse(user);
+        } catch(RuntimeException e){
+            throw e;
+        }catch (Exception e) {
+            throw new RuntimeException("Failed to delete user",e);
+        }
+    }
+    public UserResponse getUserByUsername(String username) {
+        try {
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new DataNotFoundException("User not found with username " + username));
+            return convertToResponse(user);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get data user",e);
+        }
+    }
+    @Transactional
+    public UserResponse updateUserAdmin(UserRequest userRequest, String username) {
+        try {
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new DataNotFoundException("User not found with username " + username));
+            if (userRequest.getUsername() != null) user.setUsername(userRequest.getUsername());
+            if (userRequest.getEmail() != null) user.setEmail(userRequest.getEmail());
+            if (userRequest.getPassword() != null) user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
+            if (userRequest.getRole() != null && !user.getRole().equals("ADMIN")) user.setRole(userRequest.getRole());
+            User updatedUser = userRepository.save(user);
+            return convertToResponse(updatedUser);
+        } catch (DataNotFoundException e){
+            throw e;
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Failed to update user",e);
+        }
+    }
+    public Page<UserResponse> findByUsernameContainingIgnoreCase(String role, int page, int size) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+            Page<User> users = userRepository.findByUsernameContainingIgnoreCase(role, pageable);
+            return users.map(this::convertToResponse);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get data users",e);
+        }
+    }
     private UserResponse convertToResponse(User user) {
         UserResponse userResponse = new UserResponse();
         userResponse.setUsername(user.getUsername());

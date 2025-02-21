@@ -35,18 +35,26 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
-    public String generateToken(String username) {
+
+
+    public String generateToken(String username, boolean isAdmin) {
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(username)  // Subject is the username
+                .claim("role", isAdmin ? "ROLE_ADMIN" : "ROLE_USER")  // Ensure it adds "ROLE_" prefix for roles
+                .claim("isAdmin", isAdmin)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))  // 10 hours
                 .signWith(io.jsonwebtoken.SignatureAlgorithm.HS256, secretKey)
                 .compact();
     }
+
+
     //validasi token dan user yang dikirim
 
     public Boolean validateToken(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return userDetails.equals(userDetails.getUsername()) && !isTokenExpired(token);
+        // Compare the extracted username with the username in UserDetails
+        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
+
 }

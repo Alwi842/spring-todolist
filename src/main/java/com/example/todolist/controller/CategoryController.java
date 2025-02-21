@@ -86,7 +86,7 @@ public class CategoryController {
                     .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
     }
-    @GetMapping("/id/{id}")
+    @GetMapping("/id/{id}") //localhost:8080/api/todolist/category/id/{id}
     public ResponseEntity<?> getCategoryById(@PathVariable Long id) {
         try{
             Optional<CategoryResponse> categoryResponse = categoryService.findById(id);

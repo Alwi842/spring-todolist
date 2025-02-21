@@ -9,18 +9,19 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collections;
 import java.util.Collection;
+import java.util.UUID;
 
-//CustomUserDetails : class implementasi dari UserDetails
-//untuk kebutuhan kostumisasi method, dalam kasus ini override method getAuthorities
 @Data
 @AllArgsConstructor
 public class CustomUserDetails implements UserDetails {
+
     private final User user;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singleton(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
     }
+
     @Override
     public String getPassword() {
         return user.getPassword();
@@ -49,5 +50,13 @@ public class CustomUserDetails implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    public UUID getUserId() {
+        return user.getId();
+    }
+
+    public boolean isAdmin() {
+        return "ADMIN".equalsIgnoreCase(user.getRole());
     }
 }

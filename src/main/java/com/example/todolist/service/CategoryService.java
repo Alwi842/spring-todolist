@@ -72,10 +72,9 @@ public class CategoryService {
     }
     public Optional<CategoryResponse> findById(Long id){
         try {
-            if(categoryRepository.existsById(id)){
-                throw new DataNotFoundException("Category not found with id "+id);
-            }
-            return categoryRepository.findById(id).map(this::convertToResponse);
+            Category category = categoryRepository.findById(id)
+                    .orElseThrow(() -> new DataNotFoundException("Category not found with id "+id));
+            return Optional.of(convertToResponse(category));
         } catch (DataNotFoundException e) {
             throw e;
         } catch (Exception e) {

@@ -43,20 +43,76 @@ public class TodolistController {
                     .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
     }
-    @Operation(summary = "Get todolist by id")
-    @GetMapping("/{id}")
-    private ResponseEntity<?> getTodolistById(@PathVariable Long id){
+    @GetMapping("/{name:[a-zA-Z0-9._-]+}")
+    public ResponseEntity<?> getTodosByUsername(
+            @PathVariable String name,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         try {
-            return ResponseEntity.status(HttpStatus.OK.value())
-                    .body(new ApiResponse<>(HttpStatus.OK.value(), todolistService.findById(id)));
-        } catch (DataNotFoundException e){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND.value())
+            Page<TodolistResponse> response = todolistService.findByUsername(name, page, size);
+            return ResponseEntity
+                    .ok(new PaginatedResponse<>(200, response));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
+        }
+    }
+    @GetMapping("/id/{id}")
+    public ResponseEntity<?> getTodolistById(@PathVariable("id") Long id) {
+        try {
+            TodolistResponse response = todolistService.findById(id);
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(new ApiResponse<>(HttpStatus.OK.value(), response));
+        } catch (DataNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new ApiResponse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
-        }catch (Exception e) {
+        }
+    }
+    //get all trashed todolists
+    @GetMapping("/trashed") //localhost:8080/api/todolist/trashed
+    public ResponseEntity<?> getAllDeleted(@RequestParam(defaultValue = "0") int page,
+                                                   @RequestParam(defaultValue = "10") int size){
+        try {
+            Page<TodolistResponse> response = todolistService.findAllDeleted(page,size);
+            return ResponseEntity
+                    .ok(new PaginatedResponse<>(200, response));
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                     .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
     }
+    //get all trashed by username
+    @GetMapping("/trashed/{username:[a-zA-Z0-9._-]+}")//localhost:8080/api/todolist/trashed/{name}
+    public ResponseEntity<?> getAllDeletedByUsername(@PathVariable String username,
+                                                      @RequestParam(defaultValue = "0") int page,
+                                                      @RequestParam(defaultValue = "10") int size){
+            try {
+                Page<TodolistResponse> response = todolistService.findAllTrashedByUsername(page,size,username);
+                return ResponseEntity
+                        .ok(new PaginatedResponse<>(200, response));
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                        .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
+            }
+    }
+    //find all todolist by category and username
+    @GetMapping("/categoryAndUsername")
+    public ResponseEntity<?> findAllByCategoryAndUsername(
+            @RequestParam String username,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam Long categoryId) {
+
+        try {
+            Page<TodolistResponse> response = todolistService.findAllByCategoryAndUsername(page, size, categoryId, username);
+            return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), response));
+        } catch (DataNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
+        }
+    }
+
+
     @Operation(summary = "Create todolist")
     @PostMapping(consumes = "multipart/form-data")
     private ResponseEntity<?> createTodolist(@Valid @ModelAttribute @RequestBody TodolistRequest todolistRequest){
@@ -134,7 +190,11 @@ public class TodolistController {
             return ResponseEntity.ok()
                     .header("Content-Type", "image/jpeg")
                     .body(image);
-        } catch (Exception e) {
+        } catch(DataNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND.value())
+                    .body(new ApiResponse<>(HttpStatus.NOT_FOUND.value(), e.getMessage()));
+
+        }catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                     .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
@@ -162,4 +222,5 @@ public class TodolistController {
                     .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
     }
+
 }

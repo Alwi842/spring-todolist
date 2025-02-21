@@ -16,7 +16,7 @@ public class TodolistRequest {
     private String description;
     @NotBlank
     private String username;
-    @NotBlank
+    @NotNull
     private Long categoryId;
     @NotNull
     private Boolean isCompleted;

@@ -21,8 +21,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -46,51 +50,89 @@ public class TodolistService {
             throw new RuntimeException("Failed to get data todolists",e);
         }
     }
-    public TodolistResponse findById(Long id) {
+    public Page<TodolistResponse> findByUsername(String username, int page, int size) {
         try{
-            return todolistRepository.findById(id).map(this::convertToResponse)
-                    .orElseThrow(()-> new DataNotFoundException("Todolist not found with id "+id));
-        } catch(DataNotFoundException e){
-            throw e;
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Todolist> todolists = todolistRepository.findAllByDeletedAtIsNullAndUsername(username,pageable);
+            return todolists.map(this::convertToResponse);
         } catch (Exception e) {
             throw new RuntimeException("Failed to get data todolists",e);
         }
     }
+    public TodolistResponse findById(Long id) {
+        try {
+            return todolistRepository.findById(id)
+                    .map(this::convertToResponse)
+                    .orElseThrow(() -> new DataNotFoundException("Todolist not found with id " + id));
+        } catch (DataNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            // Log unexpected exceptions
+            System.err.println("Unexpected error occurred while fetching Todolist: " + e.getMessage());
+            throw new RuntimeException("Failed to get data todolists", e);
+        }
+    }
 
-    @Transactional
-    public TodolistResponse create(TodolistRequest todolistRequest) {
+
+    public Page<TodolistResponse> findAllDeleted(int page, int size) {
         try{
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Todolist> todolists = todolistRepository.findAllTrashed(pageable);
+            return todolists.map(this::convertToResponse);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get data todolists",e);
+        }
+    }
+    @Transactional
+
+    public TodolistResponse create(TodolistRequest todolistRequest) {
+        try {
             User user = userRepository.findByUsername(todolistRequest.getUsername())
                     .orElseThrow(() -> new DataNotFoundException("User not found"));
-            Category category=categoryRepository.findById(todolistRequest.getCategoryId())
-                    .orElseThrow(()-> new DataNotFoundException("Category not found"));
-            if (!categoryRepository.existsById(todolistRequest.getCategoryId())){
-                throw new DataNotFoundException("Category not found");
-            }
-            Todolist todolist =new Todolist();
+            Category category = categoryRepository.findById(todolistRequest.getCategoryId())
+                    .orElseThrow(() -> new DataNotFoundException("Category not found"));
+
+            Todolist todolist = new Todolist();
             todolist.setTitle(todolistRequest.getTitle());
             todolist.setDescription(todolistRequest.getDescription());
             todolist.setCategory(category);
             todolist.setUser(user);
             todolist.setIsCompleted(todolistRequest.getIsCompleted());
-            if(todolistRequest.getImagePath() != null && !todolistRequest.getImagePath().isEmpty()) {
-                MultipartFile file = todolistRequest.getImagePath();
-                String customFileName = validateFile(file);
 
-                Path path = Path.of(imageDirectory + customFileName);
-                Files.copy(file.getInputStream(), path);
-                todolist.setImagePath(customFileName);
+            if (todolistRequest.getImagePath() != null && !todolistRequest.getImagePath().isEmpty()) {
+                MultipartFile file = todolistRequest.getImagePath();
+                validateFile(file);
+
+                String uniqueFileName = generateUniqueFileName(Objects.requireNonNull(file.getOriginalFilename()));
+                String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+                Path fullPath = Path.of(imageDirectory, datePath, uniqueFileName);
+                Path imagePath = Path.of(datePath, uniqueFileName);
+
+                Files.createDirectories(fullPath.getParent());
+
+                Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
+
+                todolist.setImagePath(imagePath.toString().replace("\\", "/"));
             }
-            todolist=todolistRepository.save(todolist);
+
+            todolist = todolistRepository.save(todolist);
             return convertToResponse(todolist);
-        } catch(IllegalArgumentException | DataNotFoundException e){
+
+        } catch (IllegalArgumentException | DataNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to create Todolist", e);
         }
     }
 
-    private static String validateFile(MultipartFile file) {
+    // 🆔 Generate Unique Filename
+    private String generateUniqueFileName(String originalFileName) {
+        String extension = originalFileName.substring(originalFileName.lastIndexOf("."));
+        return UUID.randomUUID().toString() + extension;
+    }
+
+
+    private static void validateFile(MultipartFile file) {
         long maxFileSize = 5 * 1024 * 1024;
         if(file.getSize() > maxFileSize) {
             throw new RuntimeException("File size exceeds the maximum limit of " + maxFileSize / (1024 * 1024) + "MB");
@@ -109,60 +151,89 @@ public class TodolistService {
             throw new RuntimeException("Invalid file type. Only JPEG, PNG, and JPG files are allowed.");
         }
 
-        String originalFilename = file.getOriginalFilename();
-        return "todolist_image" + "_" + originalFilename;
     }
 
 
     @Transactional
-    public TodolistResponse updateTodolist (Long id, TodolistRequest todolistRequest){
+    public TodolistResponse updateTodolist(Long id, TodolistRequest todolistRequest) {
         try {
             Todolist todolist = todolistRepository.findById(id)
-                    .orElseThrow(()-> new DataNotFoundException("Todolist not found : "+id));
+                    .orElseThrow(() -> new DataNotFoundException("Todolist not found : " + id));
 
-            if (todolistRequest.getTitle()!=null) todolist.setTitle(todolistRequest.getTitle());
-            if (todolistRequest.getDescription()!=null) todolist.setDescription(todolistRequest.getDescription());
-            if (todolistRequest.getIsCompleted()!=null) todolist.setIsCompleted(todolistRequest.getIsCompleted());
-            if (todolistRequest.getCategoryId()!=null) {
-                Category category=categoryRepository.findById(todolistRequest.getCategoryId())
-                        .orElseThrow(()-> new DataNotFoundException("Category not found"));
+            if (todolistRequest.getTitle() != null) todolist.setTitle(todolistRequest.getTitle());
+            if (todolistRequest.getDescription() != null) todolist.setDescription(todolistRequest.getDescription());
+            if (todolistRequest.getIsCompleted() != null) todolist.setIsCompleted(todolistRequest.getIsCompleted());
+
+            if (todolistRequest.getCategoryId() != null) {
+                Category category = categoryRepository.findById(todolistRequest.getCategoryId())
+                        .orElseThrow(() -> new DataNotFoundException("Category not found"));
                 todolist.setCategory(category);
             }
-            if (todolistRequest.getUsername()!=null) {
+
+            if (todolistRequest.getUsername() != null) {
                 User user = userRepository.findByUsername(todolistRequest.getUsername())
                         .orElseThrow(() -> new DataNotFoundException("User not found"));
                 todolist.setUser(user);
             }
-            if(todolistRequest.getImagePath() != null && !todolistRequest.getImagePath().isEmpty()) {
-                MultipartFile file = todolistRequest.getImagePath();
-                String customFileName = validateFile(file);
 
-                Path path = Path.of(imageDirectory + customFileName);
-                Files.copy(file.getInputStream(), path);
-                todolist.setImagePath(customFileName);
+            if (todolistRequest.getImagePath() != null && !todolistRequest.getImagePath().isEmpty()) {
+                MultipartFile file = todolistRequest.getImagePath();
+                validateFile(file);
+
+                String uniqueFileName = generateUniqueFileName(Objects.requireNonNull(file.getOriginalFilename()));
+                String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+                Path fullPath = Path.of(imageDirectory, datePath, uniqueFileName);
+                Path imagePath = Path.of(datePath, uniqueFileName);
+
+                Files.createDirectories(fullPath.getParent());
+
+                Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
+
+                if (todolist.getImagePath() != null) {
+                    Path oldImagePath = Path.of(imageDirectory, todolist.getImagePath());
+                    Files.deleteIfExists(oldImagePath);
+                }
+                todolist.setImagePath(imagePath.toString().replace("\\", "/"));
+
             }
 
             todolist = todolistRepository.save(todolist);
             return convertToResponse(todolist);
-        } catch (DataNotFoundException e){
+
+        } catch (DataNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to update Todolist", e);
         }
     }
+
+
     @Transactional
-    public void deleteTodolist(Long id){
-        try{
-            if(!todolistRepository.existsById(id)){
-                throw new DataNotFoundException("No todo list with id : "+id);
+    public void deleteTodolist(Long id) {
+        try {
+            Todolist todolist = todolistRepository.findById(id)
+                    .orElseThrow(() -> new DataNotFoundException("No todo list with id : " + id));
+
+            // Check and delete the associated image if exists
+            if (todolist.getImagePath() != null && !todolist.getImagePath().isEmpty()) {
+                Path imagePath = Paths.get(imageDirectory, todolist.getImagePath());
+                try {
+                    if (Files.exists(imagePath)) {
+                        Files.delete(imagePath);
+                    }
+                } catch (Exception e) {
+                    throw e;
+                }
             }
+
             todolistRepository.deleteById(id);
-        } catch (DataNotFoundException e){
+        } catch (DataNotFoundException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
+
     //soft delete
     @Transactional
     public void softDeleteTodolist(Long id){
@@ -206,8 +277,12 @@ public class TodolistService {
                 return Files.readAllBytes(filePath);
             }
             throw new RuntimeException("Image path doesent exist with id : "+id);
-        } catch (IOException e){
+        } catch(DataNotFoundException e){
+            throw e;
+        }catch (IOException e){
             throw new RuntimeException("Failed to read image file",e);
+        } catch(RuntimeException e){
+            throw e;
         }catch (Exception e) {
             throw new RuntimeException("Failed to get data todolists",e);
         }
@@ -232,6 +307,39 @@ public class TodolistService {
             throw new RuntimeException("Failed to get data todolists",e);
         }
     }
+    public List<TodolistResponse> findByUsername(String username) {
+        try {
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(()-> new DataNotFoundException("User not found with username : "+username));
+            return todolistRepository.findByUserId(user.getId())
+                    .stream()
+                    .map(this::convertToResponse)
+                    .toList();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get data todolists",e);
+        }
+    }
+    public Page<TodolistResponse> findAllByCategoryAndUsername(int page, int size, Long categoryId, String username) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+
+            return todolistRepository.findAllByCategoryAndUsername(categoryId, username, pageable)
+                    .map(this::convertToResponse);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get data todolists",e);
+        }
+    }
+    public Page<TodolistResponse> findAllTrashedByUsername(int page, int size, String username) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+
+            return todolistRepository.findAllTrashedByUsername(username, pageable)
+                    .map(this::convertToResponse);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get data todolists",e);
+        }
+    }
+
     public TodolistResponse convertToResponse(Todolist todolist) {
         TodolistResponse response = new TodolistResponse();
         response.setId(todolist.getId());

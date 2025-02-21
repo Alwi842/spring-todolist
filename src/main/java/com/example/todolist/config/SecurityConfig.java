@@ -43,7 +43,7 @@ public class SecurityConfig {
                         corsConfiguration.setAllowCredentials(true); //mengizinkan kredensial
                         corsConfiguration.addAllowedHeader("*");// mengizinkan akses ke semua header
                         corsConfiguration.addAllowedMethod("*"); // mengizinkan akses ke semua method (GET, POST, PUT, DELETE)
-                        corsConfiguration.addAllowedOrigin("*"); //mengizinkan akses ke semua origin
+                        corsConfiguration.addAllowedOriginPattern("*"); //mengizinkan akses ke semua origin
                         corsConfiguration.setMaxAge(3600L); //mengatur waktu kedaluwarsa
                         return corsConfiguration;
                     }
@@ -51,10 +51,13 @@ public class SecurityConfig {
                 //pengaturan otorisasi (akses endpoint)
                 .authorizeHttpRequests(session -> session
                         .requestMatchers(HttpMethod.GET,"/api/user/all").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET,"/api/user/get/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET,"/api/user/search/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST,"/api/user/register").permitAll()
                         .requestMatchers(HttpMethod.POST,"/api/user/login").permitAll()
-                        .requestMatchers(HttpMethod.PUT,"/api/user/update").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE,"/api/user/delete").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT,"/api/user/update/*").permitAll()
+                        .requestMatchers(HttpMethod.PUT,"/api/user/update/admin/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE,"/api/user/delete/*").hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.GET,"/api/todolist/**").permitAll()
                         .requestMatchers(HttpMethod.POST,"/api/todolist/**").permitAll()
